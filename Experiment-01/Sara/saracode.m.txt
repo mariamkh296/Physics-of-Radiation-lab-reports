@@ -14,4 +14,5 @@ plot(x, y);
 xlabel('X-axis (Time)');
 ylabel('Y-axis (Countable number)');
 title('Radiation Lab Data');
+
 grid on;
