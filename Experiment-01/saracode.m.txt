@@ -1,0 +1,17 @@
+clc
+clear;
+close all;
+
+% Read the Excel file
+D = readmatrix("/MATLAB Drive/physics of radiation lab 1.xlsx");
+
+% Extract relevant columns from the data
+x = D(:,1);  % Use D instead of data, and regular indexing for matrix
+y = D(:,2);
+
+% Create the plot
+plot(x, y);
+xlabel('X-axis (Time)');
+ylabel('Y-axis (Countable number)');
+title('Radiation Lab Data');
+grid on;
