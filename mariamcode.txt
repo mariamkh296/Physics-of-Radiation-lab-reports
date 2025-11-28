@@ -1,0 +1,27 @@
+clear
+close all
+clc
+
+% Excel file path
+filename = "physics of radiation lab 1.xlsx";
+
+% Read the Excel file (two columns, many rows)
+data = readmatrix("C:\Users\lenovo\Desktop\physics of radiation\physics of radiation lab 1.xlsx");
+
+% Extract X and Y
+x = data(:,1);   % Column A
+y = data(:,2);   % Column B
+
+% Remove zero or very small values to make plot clearer
+idx = y > 0;  % keep only positive values
+x_new = x(idx);
+y_new = y(idx);
+
+% Plot with logarithmic Y-axis
+figure;
+semilogy(x_new, y_new, '-o', 'LineWidth', 1.5, 'MarkerSize', 6, 'MarkerFaceColor','r', 'Color',[0.2 0.6 0.8]);
+grid on;
+
+xlabel('X values (Time should)');
+ylabel('Y values (Count rate)');
+title(' (Logarithmic Y)');
