@@ -1,0 +1,35 @@
+clc; clear; close all;
+
+% Read the Excel file
+filename = 'C:\Users\Mosub Hazem\Downloads\radiation3_2.xlsx';
+T = readtable(filename);
+
+% Display columns to verify
+disp('Columns in the file:');
+disp(T.Properties.VariableNames);
+
+
+%% ===============================================================
+%  Plot 1: Compensation Temperature vs Count Rate
+% ===============================================================
+figure;
+plot(T.Compensation_temperature, T.Count_rate, 'o-', ...
+    'LineWidth', 2, 'MarkerSize', 6);
+
+xlabel('Compensation_Temperature');
+ylabel('Count Rate');
+title('Compensation_Temperature vs Count_Rate');
+grid on;
+
+
+%% ===============================================================
+%  Plot 2: Temperature vs Count Rate
+% ===============================================================
+figure;
+plot(T.Temperature, T.Count_rate, 's-', ...
+    'LineWidth', 2, 'MarkerSize', 6);
+
+xlabel('Temperature (°C)');
+ylabel('Count_Rate');
+title('Temperature vs Count_Rate');
+grid on;
