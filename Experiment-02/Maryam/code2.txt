@@ -24,4 +24,5 @@ grid on;
 
 xlabel('Temperature');
 ylabel('Count rate');
+
 title(' (Logarithmic Y)');
