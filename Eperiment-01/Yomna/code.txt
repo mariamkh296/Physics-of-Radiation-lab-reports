@@ -295,4 +295,5 @@ text(1:length(stats_data), stats_data, num2str(stats_data', '%.1f'), ...
 
 sgtitle('Muon Radiation Detection Analysis - Complete Results');
 
+
 fprintf('\nAnalysis complete! Check the generated figures for results.\n');
