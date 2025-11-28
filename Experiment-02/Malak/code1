@@ -1,0 +1,24 @@
+clear
+clc
+close all
+
+% Load data
+data = readmatrix("/Users/ahmedsameh/Downloads/radiation3_1.xlsx");
+
+count = data(:,1);   % Count rate
+temp = data(:,2);   % Temperature 
+Vin = data(:,3);
+[count_sorted, order] = sort(count);
+temp_sorted = temp(order);
+Vin_sorted = Vin(order);
+% Plot (normal 2D plot)
+figure;
+plot(count_sorted, temp_sorted, '-o', 'LineWidth', 1.5, 'MarkerSize', 6, ...
+    'MarkerFaceColor','r');
+hold on
+plot(count_sorted, Vin_sorted, '-s', 'LineWidth', 1.5, 'MarkerSize', 6, ...
+    'MarkerFaceColor','b');
+grid on;
+xlabel('Count Rate (cps)');
+ylabel('Temperature (C°)');
+title('Count Rate VS Temperature (C°)');
