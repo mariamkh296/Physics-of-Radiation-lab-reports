@@ -13,4 +13,5 @@ grid on;
 
 xlabel('Time Theshold');
 ylabel('Countnting rate');
+
 title('Time Vs counting rate');  
