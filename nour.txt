@@ -1,0 +1,25 @@
+clear; close all; clc;
+
+% Excel file path
+filename = "C:\Users\USER\Downloads\physics of radiation lab.xlsx";
+
+% Read the Excel file (two columns, many rows)
+data = readmatrix(filename);
+
+% Extract X and Y
+x = data(:,1);   % Column A
+y = data(:,2);   % Column B
+
+% Remove zero or very small values to make plot clearer
+idx = y > 0;  % keep only positive values
+x_new = x(idx);
+y_new = y(idx);
+
+% Plot with logarithmic Y-axis
+figure;
+semilogy(x_new, y_new, '-o', 'LineWidth', 1.5, 'MarkerSize', 6, 'MarkerFaceColor',[1 0.2 0.6], 'Color',[1 0.2 0.6]);
+grid on;
+
+xlabel('Time Theshold');
+ylabel('Counting rate');
+title('Time Vs Counting rate');
