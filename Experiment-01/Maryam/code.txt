@@ -24,4 +24,5 @@ grid on;
 
 xlabel('X values (Time should)');
 ylabel('Y values (Count rate)');
+
 title(' (Logarithmic Y)');
