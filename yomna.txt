@@ -1,0 +1,298 @@
+%% Radiation Data Analysis: Finding Optimal Threshold for Muon Detection
+% This script analyzes radiation data to find the best threshold that
+% separates noise from muon signals
+
+clear; clc; close all;
+
+%% Step 1: Load Data from Excel File
+try
+    % Load radiation data from Excel file
+    % Replace 'radiation_data.xlsx' with your actual file name
+    filename = "C:\Users\Mosub Hazem\Downloads\physics.xlsx";
+    
+    % Read the data (assuming counts are in the first column)
+    data = readtable(filename);
+    
+    % Extract radiation counts - adjust column name as needed
+    if ismember('Counts', data.Properties.VariableNames)
+        counts = data.Counts;
+    elseif ismember('Radiation', data.Properties.VariableNames)
+        counts = data.Radiation;
+    else
+        % Assume first column contains the counts
+        counts = table2array(data(:,1));
+    end
+    
+    fprintf('Data loaded successfully: %d data points\n', length(counts));
+    
+catch ME
+    % If file doesn't exist, generate synthetic data for demonstration
+    fprintf('Excel file not found. Generating synthetic radiation data...\n');
+    
+    % Generate synthetic radiation data with muons and noise
+    rng(42); % Set seed for reproducibility
+    
+    n_points = 10000;
+    
+    % Generate background noise (low amplitude)
+    noise = abs(randn(n_points, 1) * 5);
+    
+    % Generate muon signals (higher amplitude)
+    n_muons = round(n_points * 0.15); % 15% of data are muons
+    muon_indices = randperm(n_points, n_muons);
+    muon_signals = 20 + abs(randn(n_muons, 1) * 10);
+    
+    % Combine noise and muon signals
+    counts = noise;
+    counts(muon_indices) = muon_signals;
+    
+    % Add some outliers
+    outlier_indices = randperm(n_points, 50);
+    counts(outlier_indices) = 50 + rand(50, 1) * 30;
+    
+    fprintf('Synthetic data generated: %d data points\n', length(counts));
+end
+
+%% Step 2: Data Exploration and Visualization
+figure('Position', [100, 100, 1200, 800]);
+
+% Subplot 1: Raw data histogram
+subplot(2,3,1);
+histogram(counts, 100, 'FaceColor', 'blue', 'FaceAlpha', 0.7);
+xlabel('Radiation Count Value');
+ylabel('Frequency');
+title('Raw Radiation Data Distribution');
+grid on;
+
+% Subplot 2: Time series of raw data
+subplot(2,3,2);
+plot(counts(1:min(1000,length(counts))), 'b.-', 'LineWidth', 1);
+xlabel('Time Sample');
+ylabel('Count Value');
+title('Raw Data (First 1000 samples)');
+grid on;
+
+% Calculate basic statistics
+mean_count = mean(counts);
+std_count = std(counts);
+median_count = median(counts);
+fprintf('\nData Statistics:\n');
+fprintf('Mean: %.2f\n', mean_count);
+fprintf('Standard Deviation: %.2f\n', std_count);
+fprintf('Median: %.2f\n', median_count);
+
+%% Step 3: Define Threshold Range and Calculate Count Rates
+% Define a range of possible thresholds
+min_threshold = max(1, mean_count - 2*std_count);
+max_threshold = min(max(counts), mean_count + 4*std_count);
+
+% Create threshold values
+n_thresholds = 200;
+thresholds = linspace(min_threshold, max_threshold, n_thresholds);
+
+% Initialize arrays for count rates
+count_rates = zeros(size(thresholds));
+signal_to_noise_ratio = zeros(size(thresholds));
+muon_fraction = zeros(size(thresholds));
+
+% Calculate count rates for each threshold
+for i = 1:length(thresholds)
+    threshold = thresholds(i);
+    
+    % Count events above threshold (potential muons)
+    muon_count = sum(counts > threshold);
+    count_rates(i) = muon_count;
+    
+    % Calculate signal-to-noise ratio (simplified)
+    if threshold > mean_count
+        signal_to_noise_ratio(i) = (mean_count - threshold) / std_count;
+    else
+        signal_to_noise_ratio(i) = 0;
+    end
+    
+    % Calculate fraction of data classified as muons
+    muon_fraction(i) = muon_count / length(counts);
+end
+
+%% Step 4: Find Optimal Threshold Using Multiple Methods
+
+% Method 1: Knee/Elbow point detection (using curvature)
+gradient1 = gradient(count_rates);
+gradient2 = gradient(gradient1);
+curvature = abs(gradient2) ./ (1 + gradient1.^2).^(3/2);
+
+[~, knee_idx] = max(curvature);
+knee_threshold = thresholds(knee_idx);
+
+% Method 2: Based on statistical properties (mean + 3*std)
+statistical_threshold = mean_count + 3 * std_count;
+
+% Method 3: Based on fraction of data (keep top 5-15% as muons)
+target_fraction = 0.1; % Target 10% of data as muons
+[~, fraction_idx] = min(abs(muon_fraction - target_fraction));
+fraction_threshold = thresholds(fraction_idx);
+
+% Method 4: Using Otsu's method (if you have Image Processing Toolbox)
+if license('test','image_toolbox')
+    try
+        otsu_threshold = multithresh(counts, 2);
+        otsu_threshold = otsu_threshold(2); % Use higher threshold
+    catch
+        otsu_threshold = statistical_threshold;
+    end
+else
+    otsu_threshold = statistical_threshold;
+end
+
+% Select optimal threshold (you can choose your preferred method)
+optimal_threshold = knee_threshold; % Using knee point method
+
+fprintf('\nThreshold Analysis:\n');
+fprintf('Knee point threshold: %.2f\n', knee_threshold);
+fprintf('Statistical threshold (mean + 3σ): %.2f\n', statistical_threshold);
+fprintf('Fraction-based threshold (10%%): %.2f\n', fraction_threshold);
+fprintf('Otsu threshold: %.2f\n', otsu_threshold);
+fprintf('Selected optimal threshold: %.2f\n', optimal_threshold);
+
+%% Step 5: Create Main Plot - Threshold vs Count Rate
+subplot(2,3,3);
+semilogy(thresholds, count_rates, 'b-', 'LineWidth', 2);
+hold on;
+
+% Mark optimal thresholds
+plot(knee_threshold, count_rates(knee_idx), 'ro', 'MarkerSize', 10, ...
+     'MarkerFaceColor', 'red', 'DisplayName', 'Knee Point');
+plot(statistical_threshold, interp1(thresholds, count_rates, statistical_threshold), ...
+     'gs', 'MarkerSize', 8, 'MarkerFaceColor', 'green', 'DisplayName', 'Statistical');
+plot(fraction_threshold, interp1(thresholds, count_rates, fraction_threshold), ...
+     'md', 'MarkerSize', 8, 'MarkerFaceColor', 'magenta', 'DisplayName', 'Fraction-based');
+
+xlabel('Threshold Value');
+ylabel('Count Rate (log scale)');
+title('Threshold vs Count Rate');
+legend('Location', 'northeast');
+grid on;
+
+%% Step 6: Additional Analysis Plots
+
+% Subplot 4: Muon fraction vs threshold
+subplot(2,3,4);
+plot(thresholds, muon_fraction * 100, 'r-', 'LineWidth', 2);
+hold on;
+plot([optimal_threshold, optimal_threshold], [0, 100], 'k--', 'LineWidth', 1.5);
+xlabel('Threshold Value');
+ylabel('Muon Fraction (%)');
+title('Muon Fraction vs Threshold');
+grid on;
+
+% Subplot 5: Data before and after thresholding
+subplot(2,3,5);
+% Plot histogram with threshold line
+histogram(counts, 100, 'FaceColor', 'blue', 'FaceAlpha', 0.7);
+hold on;
+plot([optimal_threshold, optimal_threshold], ylim, 'r-', 'LineWidth', 3);
+xlabel('Radiation Count Value');
+ylabel('Frequency');
+title('Data Distribution with Optimal Threshold');
+legend('Data', 'Optimal Threshold', 'Location', 'northeast');
+grid on;
+
+% Subplot 6: Classification results
+subplot(2,3,6);
+% Classify data
+noise_data = counts(counts <= optimal_threshold);
+muon_data = counts(counts > optimal_threshold);
+
+% Create bar plot
+categories = {'Noise', 'Muons'};
+counts_bar = [length(noise_data), length(muon_data)];
+bar(categories, counts_bar, 'FaceColor', [0.5 0.5 0.5]);
+ylabel('Number of Events');
+title(sprintf('Classification Results\n(Threshold = %.2f)', optimal_threshold));
+text(1:2, counts_bar, num2str(counts_bar'), 'vert', 'bottom', 'horiz', 'center', 'FontWeight', 'bold');
+
+%% Step 7: Display Final Results
+fprintf('\n=== FINAL RESULTS ===\n');
+fprintf('Optimal threshold: %.2f\n', optimal_threshold);
+fprintf('Events classified as noise: %d (%.1f%%)\n', length(noise_data), length(noise_data)/length(counts)*100);
+fprintf('Events classified as muons: %d (%.1f%%)\n', length(muon_data), length(muon_data)/length(counts)*100);
+fprintf('Muon count rate: %.2f events per sample\n', length(muon_data)/length(counts));
+
+% Calculate signal characteristics
+fprintf('\nMuon Signal Characteristics:\n');
+fprintf('Mean muon signal: %.2f\n', mean(muon_data));
+fprintf('Std of muon signals: %.2f\n', std(muon_data));
+fprintf('Min/Max muon signal: %.2f / %.2f\n', min(muon_data), max(muon_data));
+
+%% Step 8: Save Results (Optional)
+% Save the optimal threshold and classification results
+results.optimal_threshold = optimal_threshold;
+results.noise_events = length(noise_data);
+results.muon_events = length(muon_data);
+results.muon_fraction = length(muon_data)/length(counts);
+results.muon_mean = mean(muon_data);
+results.muon_std = std(muon_data);
+
+save('muon_analysis_results.mat', 'results');
+
+% Create results table
+results_table = table(optimal_threshold, length(noise_data), length(muon_data), ...
+                     length(muon_data)/length(counts)*100, mean(muon_data), std(muon_data), ...
+                     'VariableNames', {'OptimalThreshold', 'NoiseEvents', 'MuonEvents', ...
+                     'MuonPercentage', 'MuonMean', 'MuonStd'});
+writetable(results_table, 'muon_analysis_summary.csv');
+
+fprintf('\nResults saved to:\n');
+fprintf(' - muon_analysis_results.mat\n');
+fprintf(' - muon_analysis_summary.csv\n');
+
+%% Step 9: Create a Comprehensive Summary Figure
+figure('Position', [200, 200, 1000, 600]);
+
+% Plot 1: Main threshold analysis
+subplot(2,2,1);
+yyaxis left;
+plot(thresholds, count_rates, 'b-', 'LineWidth', 2);
+ylabel('Count Rate');
+yyaxis right;
+plot(thresholds, muon_fraction*100, 'r-', 'LineWidth', 2);
+ylabel('Muon Fraction (%)');
+xlabel('Threshold Value');
+title('Comprehensive Threshold Analysis');
+grid on;
+legend('Count Rate', 'Muon Fraction', 'Location', 'northeast');
+
+% Plot 2: Data classification
+subplot(2,2,2);
+histogram(noise_data, 50, 'FaceColor', 'red', 'FaceAlpha', 0.7, 'DisplayName', 'Noise');
+hold on;
+histogram(muon_data, 50, 'FaceColor', 'blue', 'FaceAlpha', 0.7, 'DisplayName', 'Muons');
+xlabel('Radiation Count Value');
+ylabel('Frequency');
+title('Data Classification with Optimal Threshold');
+legend;
+grid on;
+
+% Plot 3: Threshold selection criteria
+subplot(2,2,3);
+plot(thresholds, curvature, 'g-', 'LineWidth', 2);
+hold on;
+plot(knee_threshold, curvature(knee_idx), 'ro', 'MarkerSize', 8, 'MarkerFaceColor', 'red');
+xlabel('Threshold Value');
+ylabel('Curvature');
+title('Knee Point Detection (Curvature)');
+grid on;
+
+% Plot 4: Summary statistics
+subplot(2,2,4);
+stats_data = [mean_count, std_count, optimal_threshold, length(muon_data)];
+bar(stats_data);
+set(gca, 'XTickLabel', {'Mean', 'Std Dev', 'Optimal Thr', 'Muon Count'});
+ylabel('Value');
+title('Summary Statistics');
+text(1:length(stats_data), stats_data, num2str(stats_data', '%.1f'), ...
+     'vert', 'bottom', 'horiz', 'center', 'FontWeight', 'bold');
+
+sgtitle('Muon Radiation Detection Analysis - Complete Results');
+
+fprintf('\nAnalysis complete! Check the generated figures for results.\n');
