@@ -1,0 +1,24 @@
+file1 = "C:\Users\USER\Downloads\radiation3_1.xlsx";
+file2 = "C:\Users\USER\Downloads\radiation3_2.xlsx";
+
+try
+    D1 = readmatrix(file1);
+    X1 = D1(:, 5); Y1 = D1(:, 1);
+    
+    D2 = readmatrix(file2);
+    X2 = D2(:, 5); Y2 = D2(:, 1);
+catch ME
+    error('Error reading files: %s', ME.message);
+end
+
+figure;
+plot(X1, Y1, 'b-o', 'LineWidth', 1.5, 'DisplayName', 'Vin = 41.65 V');
+hold on;
+plot(X2, Y2, 'r--x', 'LineWidth', 1.5, 'DisplayName', 'Vin = 42.00 V');
+
+title('Count Rate vs Compensation Temperature Comparison');
+xlabel('Compensation Temperature (C)'); 
+ylabel('Count Rate');              
+legend('Location', 'best'); 
+grid on;
+hold off;
