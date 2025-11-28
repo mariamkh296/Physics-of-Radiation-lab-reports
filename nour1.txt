@@ -1,0 +1,16 @@
+clear; close all; clc;
+
+filename = "C:\Users\USER\Downloads\physics of radiation lab.xlsx";
+
+data = readmatrix(filename);
+
+x = data(:,1);   % Column A
+y = data(:,2);   % Column B
+
+figure;
+plot(x, y, '-o', 'LineWidth', 1.5, 'MarkerSize', 6,'Color',[1 0.2 0.6]);
+grid on;
+
+xlabel('Time Theshold');
+ylabel('Countnting rate');
+title('Time Vs counting rate');  
